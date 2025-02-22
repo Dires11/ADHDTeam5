@@ -1,23 +1,21 @@
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
-import List from './app/screens/List';
-import Login from './app/screens/Login';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import AppNavigator from './navigation';
+import { registerForPushNotificationsAsync } from './features/notifications';
+import { FIREBASE_AUTH } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 
-const Stack = createNativeStackNavigator();
-
 export default function App() {
-  //--------------------------Sample Login Page-----------------------------
+  useEffect(() => {
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(FIREBASE_AUTH, (user) => {
+      console.log(user ? 'User logged in' : 'User not logged in');
+    });
 
-  return (
-    <NavigationContainer>
-        <Stack.Navigator initialRouteName='Login'>
-        <Stack.Screen name="My Todos" component={List} />
-        <Stack.Screen name="Login" component={Login} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+    // Register for push notifications
+    registerForPushNotificationsAsync();
+
+    return () => unsubscribe(); // Cleanup on unmount
+  }, []);
+
+  return <AppNavigator />;
 }
-
-

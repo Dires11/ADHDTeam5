@@ -2,7 +2,7 @@ import { View, Text, Button, TextInput, StyleSheet, ActivityIndicator } from 're
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook
-import List from './List';
+import { Alert } from 'react-native';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -22,6 +22,7 @@ const Login = () => {
             navigation.navigate('My Todos');  // Navigate to 'My Todos' after successful sign-up
         } catch (error: any) {
             setError(error.message);
+            Alert.alert('Error', error.message);
         } finally {
             setLoading(false);
         }
@@ -35,7 +36,7 @@ const Login = () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             console.log('Signed in:', userCredential.user);
             alert('Successfully signed in!');
-            navigation.navigate('My Todos');  // Navigate to 'My Todos' after successful sign-in
+            navigation.navigate('My Todos');
         } catch (error: any) {
             setError(error.message);
         } finally {
