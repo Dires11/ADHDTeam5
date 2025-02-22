@@ -49,23 +49,27 @@ export async function registerForPushNotificationsAsync() {
 
 // Function to schedule a reminder notification
 export async function scheduleTodoReminder(timeInSeconds: number): Promise<void> {
-    console.log(`Scheduling notification in ${timeInSeconds} seconds...`);  // Debugging line
+    console.log(`Scheduling notification in ${timeInSeconds} seconds...`);
+
     try {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Reminder!',
-          body: 'You have unfinished tasks in your To-Do list. 📋',
-          sound: true,
-        },
-        trigger: {
-          seconds: timeInSeconds,  // Time in seconds after which the notification will fire
-          repeats: false, // Only once
-        } as Notifications.TimeIntervalTriggerInput, // Ensure the right trigger type
-      });
-      console.log('Notification scheduled successfully!');
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: 'Reminder!',
+                body: 'You have unfinished tasks in your To-Do list. 📋',
+                sound: true,
+            },
+            trigger: {
+                type: 'timeInterval', // This explicitly tells Expo to use a delay
+                seconds: timeInSeconds,  
+                repeats: false,
+            } as Notifications.TimeIntervalTriggerInput,
+        });
+
+        console.log('Notification scheduled successfully!');
     } catch (error) {
-      console.error('Failed to schedule notification:', error);
+        console.error('Failed to schedule notification:', error);
     }
-  }
+}
+
   
   
