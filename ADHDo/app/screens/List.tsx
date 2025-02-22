@@ -9,14 +9,16 @@ import TodoItem from '../../features/TodoItem';
 const List = () => {
   const [todo, setTodo] = useState('');
   const { todos, addTodo, toggleDone, deleteTodo } = useTodos();
-  const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+  //const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 
   const handleAddTodo = async () => {
     if (todo) {
       await addTodo(todo);
       setTodo('');
+      console.log('WHY ISNT THIS WORKING')
       scheduleTodoReminder(10); // Schedule a reminder in 10 seconds
+      console.log('WHY ISNT THIS WORKING PART 2')
     }
   };
 
