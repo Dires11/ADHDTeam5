@@ -8,18 +8,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  // const [authenticated, setAuthenticated] =useState(false);
-
-  useEffect(() => {
-    onAuthStateChanged;
-  })
-
   //--------------------------Sample Login Page-----------------------------
 
-  // Login page doesn't work, even in tutorial, setting intitialRouteName to My Todos
   return (
     <NavigationContainer>
-        <Stack.Navigator initialRouteName='My Todos'>
+        <Stack.Navigator initialRouteName='Login'>
         <Stack.Screen name="My Todos" component={List} />
         <Stack.Screen name="Login" component={Login} />
       </Stack.Navigator>
