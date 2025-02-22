@@ -174,3 +174,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+
+#THIS IS THE BACKEND CONFIG FILE
+ADHDo/backend/config/ss12-4cc47-firebase-adminsdk-fbsvc-0f1282ca43.json
