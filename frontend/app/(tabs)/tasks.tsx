@@ -45,21 +45,67 @@ export default function Tasks() {
   };
 
   // ✅ Add a new task
-  const addTask = () => {
+  // const addTask = () => {
+  //   if (!newTask.title.trim()) return; // Prevent empty tasks
+
+  //   setTasks([
+  //     ...tasks,
+  //     {
+  //       id: (tasks.length + 1).toString(),
+  //       title: newTask.title,
+  //       description: newTask.description || "No description",
+  //       dueDate: newTask.dueDate || "No due date",
+  //     },
+  //   ]);
+
+  //   closeModal();
+  // };
+
+  //updated task function that connects to database
+
+  const addTask = async () => {
     if (!newTask.title.trim()) return; // Prevent empty tasks
 
-    setTasks([
-      ...tasks,
-      {
+    // Add the new task to the local state immediately
+    const newTaskToAdd = {
         id: (tasks.length + 1).toString(),
         title: newTask.title,
         description: newTask.description || "No description",
         dueDate: newTask.dueDate || "No due date",
-      },
-    ]);
+    };
+
+    setTasks([...tasks, newTaskToAdd]);
+
+    // Send the new task to the backend API
+    try {
+        const response = await fetch('http://localhost:5000/api/todo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userID: "USER_ID_HERE", // Replace with actual user ID
+                taskName: newTask.title,
+                priority: "Medium", // Default or dynamic if needed
+                dueDate: newTask.dueDate || null,
+                status: "Pending",
+            }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to add task to the database.');
+            return;
+        }
+
+        console.log('Task added to the database successfully!');
+
+    } catch (error) {
+        console.error('Error adding task:', error);
+    }
 
     closeModal();
-  };
+};
+
 
   return (
     <View style={styles.container}>
