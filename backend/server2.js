@@ -9,6 +9,7 @@ app.use(express.json());
 app.use(cors());
 
 // 3) Import Your Route Files
+const guildRoutes = require("./routes/guildRoutes");
 const userRoutes = require("./routes/userRoutes");
 const plannerRoutes = require("./routes/plannerRoutes");
 const timerRoutes = require("./routes/timerRoutes");
@@ -22,6 +23,7 @@ const leaderboardRoutes = require("./routes/leaderboardRoutes");
 const rewardsRoutes = require("./routes/rewardsRoutes");
 
 // 4) Use Routes
+app.use("/guilds",guildRoutes)
 app.use("/users", userRoutes);
 app.use("/planner", plannerRoutes);
 app.use("/timers", timerRoutes);
