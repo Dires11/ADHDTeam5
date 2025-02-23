@@ -5,13 +5,15 @@ const db = require("../firebaseConfig");
 // CREATE (POST /achievements)
 router.post("/", async (req, res) => {
   try {
+    // userID should match the Auth UID from the front-end
     const { userID, achievementName, description } = req.body;
     if (!userID || !achievementName) {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
+    // Store the achievement with userID referencing the same UID as in Auth
     const newAchievement = await db.collection("achievements").add({
-      userID,
+      userID,                       // e.g. "WogXHfWZqIMvgWvTBI37DiJKV6G3"
       achievementName,
       description: description || "",
       unlockedAt: new Date()
@@ -58,6 +60,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Achievement not found" });
     }
 
+    // Update only the fields provided
     await docRef.update({
       ...(achievementName && { achievementName }),
       ...(description && { description })

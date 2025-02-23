@@ -1,6 +1,7 @@
+const admin = require("firebase-admin"); // Make sure this is installed & initialized
 const express = require("express");
 const router = express.Router();
-const db = require("../firebaseConfig");
+const db = require("../firebaseConfig"); // Firestore from firebaseConfig.js
 
 // CREATE (POST /users)
 router.post("/", async (req, res) => {
@@ -10,15 +11,25 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    const newUser = await db.collection("users").add({
-      username,
+    // 1) Create the user in Firebase Auth (Admin SDK)
+    const userRecord = await admin.auth().createUser({
       email,
       password,
-      userID,
+      displayName: username // optional, sets displayName in Auth
+    });
+
+    const uid = userRecord.uid; // e.g. "WogXHfWZqIMvgWvTBI37DiJKV6G3"
+
+    // 2) Create a Firestore doc with doc ID = uid
+    await db.collection("users").doc(uid).set({
+      username,
+      email,
+      password,      // storing plain password is not recommended
       createdAt: new Date()
     });
 
-    res.status(201).json({ id: newUser.id, message: "User created successfully!" });
+    // 3) Return success
+    res.status(201).json({ id: uid, message: "User created in Auth + Firestore!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -53,17 +64,28 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { username, email, password } = req.body;
+
+    // 1) Check if doc exists in Firestore
     const userRef = db.collection("users").doc(req.params.id);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // 2) Optionally update Auth user as well:
+    // await admin.auth().updateUser(req.params.id, {
+    //   email,
+    //   password,
+    //   displayName: username
+    // });
+
+    // 3) Update Firestore doc
     await userRef.update({
       ...(username && { username }),
       ...(email && { email }),
-      ...(password && { password })
+      ...(password && { password }) // again, consider not storing plain password
     });
+
     res.status(200).json({ message: "User updated successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -79,7 +101,12 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // 1) Optionally delete from Auth:
+    // await admin.auth().deleteUser(req.params.id);
+
+    // 2) Delete Firestore doc
     await userRef.delete();
+
     res.status(200).json({ message: "User deleted successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
