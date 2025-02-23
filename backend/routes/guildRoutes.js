@@ -61,7 +61,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// UPDATE (PUT) a Guild (for updating name and/or description)
+// UPDATE (PUT) a Guild
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -90,19 +90,36 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// ADD a member to a Guild
+// ADD a member to a Guild with duplicate check
 router.post("/:id/members", async (req, res) => {
   try {
-    const { id } = req.params;  // guild ID from URL
-    const { userId } = req.body;  // user ID to add as a member
+    const { id } = req.params;
+    const { userId } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    const guildRef = db.collection("guilds").doc(id);
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
 
-    // Add userId to the members array using Firestore's arrayUnion
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const guildRef = db.collection("guilds").doc(id);
+    const guildSnap = await guildRef.get();
+
+    if (!guildSnap.exists) {
+      return res.status(404).json({ error: "Guild not found" });
+    }
+
+    const guildData = guildSnap.data();
+
+    if (guildData.members && guildData.members.includes(userId)) {
+      return res.status(400).json({ message: "User is already a member of this guild." });
+    }
+
     await guildRef.update({
       members: admin.firestore.FieldValue.arrayUnion(userId),
       updatedAt: new Date()
@@ -115,31 +132,74 @@ router.post("/:id/members", async (req, res) => {
   }
 });
 
-// REMOVE a member from a Guild
-router.delete("/:id/members", async (req, res) => {
+// GET ranked members of a Guild (GET /guilds/:id/rank)
+router.get("/:id/rank", async (req, res) => {
   try {
-    const { id } = req.params;  // guild ID from URL
-    const { userId } = req.body;  // user ID to remove
+    const { id } = req.params;
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
+    // Fetch the guild document
+    const guildRef = db.collection("guilds").doc(id);
+    const guildSnap = await guildRef.get();
+
+    if (!guildSnap.exists) {
+      return res.status(404).json({ error: "Guild not found" });
     }
 
-    const guildRef = db.collection("guilds").doc(id);
+    const guildData = guildSnap.data();
 
-    // Remove userId from the members array using arrayRemove
-    await guildRef.update({
-      members: admin.firestore.FieldValue.arrayRemove(userId),
-      updatedAt: new Date()
+    // Check if the guild has members
+    if (!guildData.members || guildData.members.length === 0) {
+      return res.status(200).json({ message: "No members to rank in this guild." });
+    }
+
+    // Fetch all members' data from the "users" collection
+    const membersSnapshot = await db.collection("users")
+      .where(admin.firestore.FieldPath.documentId(), "in", guildData.members)
+      .select("username", "points") // Fetch only required fields
+      .get();
+
+    if (membersSnapshot.empty) {
+      return res.status(200).json({ message: "No valid users found for ranking." });
+    }
+
+    // Build a list of users with points and names
+    const members = membersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      username: doc.data().username,
+      points: doc.data().points || 0, // Default to 0 if points field is missing
+    }));
+
+    // Sort members by points (descending), then by username (ascending)
+    const sortedMembers = members.sort((a, b) => {
+      if (b.points === a.points) {
+        return a.username.localeCompare(b.username); // Sort by name if points are equal
+      }
+      return b.points - a.points; // Sort by points (highest first)
     });
 
-    return res.status(200).json({ message: "Member removed successfully" });
+    // Assign ranks without skipping for ties
+    let rank = 1;
+    let previousPoints = null;
+    let displayedRank = 1;
+    
+    const rankedMembers = sortedMembers.map((member, index) => {
+      if (previousPoints !== null && member.points < previousPoints) {
+        displayedRank = rank;
+      }
+      previousPoints = member.points;
+      rank++;
+
+      return {
+        rank: displayedRank,
+        ...member,
+      };
+    });
+
+    return res.status(200).json(rankedMembers);
   } catch (error) {
-    console.error("Error removing member:", error);
+    console.error("Error fetching member rankings:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
-
 
 module.exports = router;
