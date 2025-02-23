@@ -1,22 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../firebaseConfig"); // Ensure correct path to your firebaseConfig.js
+const db = require("../firebaseConfig");
 
-//---------------------------------------------------
-//  DIGITAL REWARDS
-//---------------------------------------------------
+//-------------------- DIGITAL REWARDS --------------------
 
-/**
- * CREATE a Digital Reward (POST /rewards/digital)
- * JSON Body:
- * {
- *   "userID": "User123",
- *   "digitalRewardName": "Amazon Gift Card",
- *   "pointsRequired": 500,
- *   "dateEarned": "2025-03-01T10:00:00Z",  // optional
- *   "redeemedAt": null                    // optional
- * }
- */
+// CREATE (POST /rewards/digital)
 router.post("/digital", async (req, res) => {
   try {
     const { userID, digitalRewardName, pointsRequired, dateEarned, redeemedAt } = req.body;
@@ -24,7 +12,6 @@ router.post("/digital", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields for digital reward!" });
     }
 
-    // Create document in "digital_rewards"
     const docRef = await db.collection("digital_rewards").add({
       userID,
       digitalRewardName,
@@ -32,8 +19,6 @@ router.post("/digital", async (req, res) => {
       dateEarned: dateEarned || null,
       redeemedAt: redeemedAt || null
     });
-
-    // Store Firestore doc ID in "digitalRewardID"
     await docRef.update({ digitalRewardID: docRef.id });
 
     res.status(201).json({ id: docRef.id, message: "Digital reward created!" });
@@ -42,9 +27,7 @@ router.post("/digital", async (req, res) => {
   }
 });
 
-/**
- * READ ALL Digital Rewards (GET /rewards/digital)
- */
+// READ ALL (GET /rewards/digital)
 router.get("/digital", async (req, res) => {
   try {
     const snapshot = await db.collection("digital_rewards").get();
@@ -55,14 +38,11 @@ router.get("/digital", async (req, res) => {
   }
 });
 
-/**
- * READ ONE Digital Reward by ID (GET /rewards/digital/:docID)
- */
+// READ ONE (GET /rewards/digital/:id)
 router.get("/digital/:id", async (req, res) => {
   try {
     const docRef = db.collection("digital_rewards").doc(req.params.id);
     const docSnap = await docRef.get();
-
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Digital reward not found" });
     }
@@ -73,16 +53,7 @@ router.get("/digital/:id", async (req, res) => {
   }
 });
 
-/**
- * UPDATE a Digital Reward (PUT /rewards/digital/:docID)
- * JSON Body can include any of:
- * {
- *   "digitalRewardName": "New Name",
- *   "pointsRequired": 999,
- *   "dateEarned": "2025-03-02T12:00:00Z",
- *   "redeemedAt": "2025-03-03T09:00:00Z"
- * }
- */
+// UPDATE (PUT /rewards/digital/:id)
 router.put("/digital/:id", async (req, res) => {
   try {
     const { digitalRewardName, pointsRequired, dateEarned, redeemedAt } = req.body;
@@ -106,9 +77,7 @@ router.put("/digital/:id", async (req, res) => {
   }
 });
 
-/**
- * DELETE a Digital Reward (DELETE /rewards/digital/:docID)
- */
+// DELETE (DELETE /rewards/digital/:id)
 router.delete("/digital/:id", async (req, res) => {
   try {
     const docRef = db.collection("digital_rewards").doc(req.params.id);
@@ -125,20 +94,9 @@ router.delete("/digital/:id", async (req, res) => {
   }
 });
 
-//---------------------------------------------------
-//  IN-PERSON REWARDS
-//---------------------------------------------------
+//-------------------- IN-PERSON REWARDS --------------------
 
-/**
- * CREATE an In-Person Reward (POST /rewards/inperson)
- * JSON Body:
- * {
- *   "userID": "User123",
- *   "inPersonRewardName": "Free Coffee",
- *   "pointsRequired": 100,
- *   "dateEarned": "2025-03-01T10:00:00Z"  // optional
- * }
- */
+// CREATE (POST /rewards/inperson)
 router.post("/inperson", async (req, res) => {
   try {
     const { userID, inPersonRewardName, pointsRequired, dateEarned } = req.body;
@@ -146,15 +104,12 @@ router.post("/inperson", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields for in-person reward!" });
     }
 
-    // Create document in "inperson_rewards"
     const docRef = await db.collection("inperson_rewards").add({
       userID,
       inPersonRewardName,
       pointsRequired,
       dateEarned: dateEarned || null
     });
-
-    // Store Firestore doc ID in "inPersonRewardID"
     await docRef.update({ inPersonRewardID: docRef.id });
 
     res.status(201).json({ id: docRef.id, message: "In-person reward created!" });
@@ -163,9 +118,7 @@ router.post("/inperson", async (req, res) => {
   }
 });
 
-/**
- * READ ALL In-Person Rewards (GET /rewards/inperson)
- */
+// READ ALL (GET /rewards/inperson)
 router.get("/inperson", async (req, res) => {
   try {
     const snapshot = await db.collection("inperson_rewards").get();
@@ -176,9 +129,7 @@ router.get("/inperson", async (req, res) => {
   }
 });
 
-/**
- * READ ONE In-Person Reward by ID (GET /rewards/inperson/:docID)
- */
+// READ ONE (GET /rewards/inperson/:id)
 router.get("/inperson/:id", async (req, res) => {
   try {
     const docRef = db.collection("inperson_rewards").doc(req.params.id);
@@ -194,15 +145,7 @@ router.get("/inperson/:id", async (req, res) => {
   }
 });
 
-/**
- * UPDATE an In-Person Reward (PUT /rewards/inperson/:docID)
- * JSON Body can include any of:
- * {
- *   "inPersonRewardName": "New Name",
- *   "pointsRequired": 200,
- *   "dateEarned": "2025-03-02T12:00:00Z"
- * }
- */
+// UPDATE (PUT /rewards/inperson/:id)
 router.put("/inperson/:id", async (req, res) => {
   try {
     const { inPersonRewardName, pointsRequired, dateEarned } = req.body;
@@ -225,9 +168,7 @@ router.put("/inperson/:id", async (req, res) => {
   }
 });
 
-/**
- * DELETE an In-Person Reward (DELETE /rewards/inperson/:docID)
- */
+// DELETE (DELETE /rewards/inperson/:id)
 router.delete("/inperson/:id", async (req, res) => {
   try {
     const docRef = db.collection("inperson_rewards").doc(req.params.id);

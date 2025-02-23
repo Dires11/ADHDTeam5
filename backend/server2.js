@@ -20,8 +20,6 @@ const streaksRoutes = require("./routes/streaksRoutes");
 const toDoRoutes = require("./routes/toDoRoutes");
 const achievementsRoutes = require("./routes/achievementsRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
-
-// ✅ Updated Rewards Route (Handles digital & in-person)
 const rewardsRoutes = require("./routes/rewardsRoutes");
 
 // 4) Use Routes
@@ -36,7 +34,7 @@ app.use("/streaks", streaksRoutes);
 app.use("/todo", toDoRoutes);
 app.use("/achievements", achievementsRoutes);
 app.use("/leaderboard", leaderboardRoutes);
-app.use("/rewards", rewardsRoutes); // <-- Digital & In-Person Rewards
+app.use("/rewards", rewardsRoutes);
 
 // 5) Simple Test Route
 app.get("/", (req, res) => {
