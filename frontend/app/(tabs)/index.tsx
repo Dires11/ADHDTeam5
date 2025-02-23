@@ -21,9 +21,7 @@ const HomeScreen: React.FC = () => {
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.content}>
-        <ThemedText style={styles.title}>{"\n"}ADH-Do</ThemedText>
-
-
+        <ThemedText style={styles.title}>{"\n\n\n"}ADH-Do</ThemedText>
 
         <ThemedView style={styles.getStartedContainer}>
           <ThemedText style={styles.getStartedTitle}>Get Started</ThemedText>
@@ -39,9 +37,15 @@ const HomeScreen: React.FC = () => {
             <ThemedText style={styles.buttonText}>Login</ThemedText>
           </ThemedView>
 
-        
+          <ThemedView style={styles.dividerContainer}>
+            <ThemedView style={styles.divider} />
+            <ThemedText style={styles.dividerText}>or</ThemedText>
+            <ThemedView style={styles.divider} />
+          </ThemedView>
 
-          
+          {/* Social Buttons */}
+          <SocialButton source={{ uri: 'https://placehold.co/20x20' }} text="Continue with Google" />
+          <SocialButton source={{ uri: 'https://placehold.co/20x20' }} text="Continue with Apple" />
         </ThemedView>
       </ThemedView>
     </ThemedView>
@@ -125,5 +129,4 @@ const styles = StyleSheet.create({
     height: 20,
   },
 });
-
 
