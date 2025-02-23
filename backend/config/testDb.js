@@ -1,4 +1,4 @@
-const db = require("./firebase_setup.js"); 
+const db = require("../firebaseConfig.js"); 
 
 async function testConnection() {
   try {
