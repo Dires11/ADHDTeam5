@@ -5,11 +5,11 @@ const admin = require("firebase-admin");
 const db = require("../firebaseConfig");
 
 // CREATE (POST) a new Bet
-//The user will choose a task they will bet on, it will send message to all guild members
+// The user will choose a task they will bet on, and it will send a message to all guild members
 router.post("/", async (req, res) => {
   try {
     const { userID, guildID, task, deadline } = req.body;
-    if (!userID || !guildID || !task || !deadline) {
+    if (!userID || !guildID || !task) {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
@@ -23,19 +23,18 @@ router.post("/", async (req, res) => {
 
     const username = userSnap.data().username;
 
-    // Create a new bet
+    // Create a new bet with an optional deadline
     const newBet = await db.collection("bets").add({
       userID,
       guildID,
       task,
-      deadline: new Date(deadline),
+      deadline: deadline ? new Date(deadline) : null, // Optional deadline
       bets: [], // Store user responses here
       completed: false,
       createdAt: new Date(),
     });
 
-console.log("Bet created with ID:", newBet.id);
-
+    console.log("Bet created with ID:", newBet.id);
 
     // Retrieve all members of the guild
     const guildRef = db.collection("guilds").doc(guildID);
@@ -51,19 +50,24 @@ console.log("Bet created with ID:", newBet.id);
     // Send an automated message to all members in the guild via talkRoutes.js
     const message = `${username} created a bet that they will complete the task of '${task}'`;
 
-    await Promise.all(guildMembers.map(async (memberID) => {
-      try {
-        await axios.post("http://localhost:5000/talk", {
-          userID: "system",
-          contactUserID: memberID,
-          taskCompletion: message
-        });
-      } catch (error) {
-        console.error(`Failed to send message to ${memberID}:`, error.message);
-      }
-    }));
+    await Promise.all(
+      guildMembers.map(async (memberID) => {
+        try {
+          await axios.post("http://localhost:5000/talk", {
+            userID: "system",
+            contactUserID: memberID,
+            taskCompletion: message,
+          });
+        } catch (error) {
+          console.error(`Failed to send message to ${memberID}:`, error.message);
+        }
+      })
+    );
 
-    res.status(201).json({ id: newBet.id, message: "Bet created successfully and messages sent to all guild members!" });
+    res.status(201).json({
+      id: newBet.id,
+      message: "Bet created successfully and messages sent to all guild members!",
+    });
   } catch (error) {
     console.error("Error creating bet:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -92,7 +96,6 @@ router.delete("/:betID", async (req, res) => {
   });
   
   
-
 
 // ADD RESPONSE TO A BET (POST /bets/:betID/respond)
 //this is when each guild member says they believe the person will finish task or not finish task
