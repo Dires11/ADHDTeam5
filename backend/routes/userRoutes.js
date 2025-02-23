@@ -1,35 +1,25 @@
-const admin = require("firebase-admin"); // Make sure this is installed & initialized
 const express = require("express");
 const router = express.Router();
-const db = require("../firebaseConfig"); // Firestore from firebaseConfig.js
+const db = require("../firebaseConfig");
 
 // CREATE (POST /users)
 router.post("/", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, points = 0 } = req.body;
     if (!username || !email || !password) {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    // 1) Create the user in Firebase Auth (Admin SDK)
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName: username // optional, sets displayName in Auth
-    });
-
-    const uid = userRecord.uid; // e.g. "WogXHfWZqIMvgWvTBI37DiJKV6G3"
-
-    // 2) Create a Firestore doc with doc ID = uid
-    await db.collection("users").doc(uid).set({
+    const newUser = await db.collection("users").add({
       username,
       email,
-      password,      // storing plain password is not recommended
+      password,
+      userID,
+      points, //initialize points
       createdAt: new Date()
     });
 
-    // 3) Return success
-    res.status(201).json({ id: uid, message: "User created in Auth + Firestore!" });
+    res.status(201).json({ id: newUser.id, message: "User created successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -63,29 +53,19 @@ router.get("/:id", async (req, res) => {
 // UPDATE (PUT /users/:id)
 router.put("/:id", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-
-    // 1) Check if doc exists in Firestore
+    const { username, email, password, points } = req.body;
     const userRef = db.collection("users").doc(req.params.id);
     const userSnap = await userRef.get();
     if (!userSnap.exists) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 2) Optionally update Auth user as well:
-    // await admin.auth().updateUser(req.params.id, {
-    //   email,
-    //   password,
-    //   displayName: username
-    // });
-
-    // 3) Update Firestore doc
     await userRef.update({
       ...(username && { username }),
       ...(email && { email }),
-      ...(password && { password }) // again, consider not storing plain password
+      ...(password && { password }),
+      ...(points !== undefined && { points }) // Update points if provided
     });
-
     res.status(200).json({ message: "User updated successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -101,15 +81,50 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 1) Optionally delete from Auth:
-    // await admin.auth().deleteUser(req.params.id);
-
-    // 2) Delete Firestore doc
     await userRef.delete();
-
     res.status(200).json({ message: "User deleted successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ADD or DEDUCT POINTS TO A USER (POST /users/:id/points) 
+//you can input a negative number so it deducts the points 
+router.post("/:id/points", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { points } = req.body;
+
+    if (typeof points !== "number") {
+      return res.status(400).json({ error: "Points must be a number" });
+    }
+
+    const userRef = db.collection("users").doc(id);
+    const userSnap = await userRef.get();
+
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Get the current points of the user
+    const currentPoints = userSnap.data().points || 0;
+
+    // Prevent points from going below zero
+    const newPoints = currentPoints + points;
+    if (newPoints < 0) {
+      return res.status(400).json({ error: "Insufficient points. Cannot deduct below zero." });
+    }
+
+    // Update the user's points using Firestore's increment function
+    await userRef.update({
+      points: admin.firestore.FieldValue.increment(points)
+    });
+
+    const action = points >= 0 ? "Added" : "Deducted";
+    res.status(200).json({ message: `${action} ${Math.abs(points)} points for user ${id}` });
+  } catch (error) {
+    console.error("Error updating points for user:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
