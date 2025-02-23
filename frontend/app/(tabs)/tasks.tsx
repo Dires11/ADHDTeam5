@@ -64,7 +64,7 @@ export default function Tasks() {
             <TaskCard
               key={item.id}
               title={item.title}
-              desciption={item.description}
+              description={item.description}
               dueDate={item.dueDate}
             />
           </View>

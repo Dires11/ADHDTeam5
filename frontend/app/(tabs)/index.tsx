@@ -8,6 +8,7 @@ import {
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useNavigation } from "@react-navigation/native"; // Import navigation hook
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Type for the social button props
 interface SocialButtonProps {
