@@ -24,7 +24,7 @@ const timerRoutes = require("./routes/timerRoutes");
 const toDoRoutes = require("./routes/toDoRoutes");
 
 // 4) Use Routes
-app.use("/bet",betRoutes);
+app.use("/bets",betRoutes);
 app.use("/guilds",guildRoutes); 
 app.use("/users", userRoutes);
 app.use("/achievements", achievementsRoutes);

@@ -34,6 +34,9 @@ router.post("/", async (req, res) => {
       createdAt: new Date(),
     });
 
+console.log("Bet created with ID:", newBet.id);
+
+
     // Retrieve all members of the guild
     const guildRef = db.collection("guilds").doc(guildID);
     const guildSnap = await guildRef.get();
@@ -66,6 +69,30 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// DELETE (DELETE /bets/:betID)
+router.delete("/:betID", async (req, res) => {
+    try {
+      const { betID } = req.params;
+  
+      const betRef = db.collection("bets").doc(betID);
+      const betSnap = await betRef.get();
+  
+      if (!betSnap.exists) {
+        return res.status(404).json({ error: "Bet not found" });
+      }
+  
+      await betRef.delete();
+  
+      res.status(200).json({ message: "Bet deleted successfully!" });
+    } catch (error) {
+      console.error("Error deleting bet:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  
+
 
 // ADD RESPONSE TO A BET (POST /bets/:betID/respond)
 //this is when each guild member says they believe the person will finish task or not finish task
