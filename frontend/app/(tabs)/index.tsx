@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, Image, ImageSourcePropType } from 'react-native';
+import { StyleSheet, Image, ImageSourcePropType, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
 
 // Type for the social button props
 interface SocialButtonProps {
@@ -18,6 +19,8 @@ const SocialButton: React.FC<SocialButtonProps> = ({ source, text }) => (
 );
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation(); // Hook for navigation
+
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.content}>
@@ -29,23 +32,21 @@ const HomeScreen: React.FC = () => {
         </ThemedView>
 
         <ThemedView style={styles.buttonContainer}>
-          <ThemedView style={styles.primaryButton}>
+          {/* Sign Up Button */}
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={() => navigation.navigate('Sign Up')}
+          >
             <ThemedText style={styles.buttonText}>Sign Up</ThemedText>
-          </ThemedView>
+          </TouchableOpacity>
 
-          <ThemedView style={styles.primaryButton}>
+          {/* Login Button */}
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={() => navigation.navigate('Login')}
+          >
             <ThemedText style={styles.buttonText}>Login</ThemedText>
-          </ThemedView>
-
-          <ThemedView style={styles.dividerContainer}>
-            <ThemedView style={styles.divider} />
-            <ThemedText style={styles.dividerText}>or</ThemedText>
-            <ThemedView style={styles.divider} />
-          </ThemedView>
-
-          {/* Social Buttons */}
-          <SocialButton source={{ uri: 'https://placehold.co/20x20' }} text="Continue with Google" />
-          <SocialButton source={{ uri: 'https://placehold.co/20x20' }} text="Continue with Apple" />
+          </TouchableOpacity>
         </ThemedView>
       </ThemedView>
     </ThemedView>
@@ -97,20 +98,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E5E5',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    color: '#666',
-  },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,4 +116,3 @@ const styles = StyleSheet.create({
     height: 20,
   },
 });
-
