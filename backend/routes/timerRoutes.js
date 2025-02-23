@@ -10,25 +10,36 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    const newTimer = await db.collection("timers").add({
-      userID,
-      startTime,
-      endTime,
-      duration,
-      taskName,
-      category
-    });
+    const docRef = await db.collection("users")
+      .doc(userID)
+      .collection("timers")
+      .add({
+        startTime,
+        endTime,
+        duration,
+        taskName,
+        category
+      });
 
-    res.status(201).json({ id: newTimer.id, message: "Timer started!" });
+    res.status(201).json({ id: docRef.id, message: "Timer started under user!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// READ ALL (GET /timers)
+// READ ALL (GET /timers?userID=xxx)
 router.get("/", async (req, res) => {
   try {
-    const snapshot = await db.collection("timers").get();
+    const { userID } = req.query;
+    if (!userID) {
+      return res.status(400).json({ error: "Missing userID" });
+    }
+
+    const snapshot = await db.collection("users")
+      .doc(userID)
+      .collection("timers")
+      .get();
+
     const timers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(timers);
   } catch (error) {
@@ -36,55 +47,86 @@ router.get("/", async (req, res) => {
   }
 });
 
-// READ ONE (GET /timers/:id)
-router.get("/:id", async (req, res) => {
+// READ ONE (GET /timers/:timerID?userID=xxx)
+router.get("/:timerID", async (req, res) => {
   try {
-    const timerRef = db.collection("timers").doc(req.params.id);
-    const timerDoc = await timerRef.get();
-    if (!timerDoc.exists) {
+    const { userID } = req.query;
+    const { timerID } = req.params;
+    if (!userID || !timerID) {
+      return res.status(400).json({ error: "Missing userID or timerID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("timers")
+      .doc(timerID);
+
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
       return res.status(404).json({ error: "Timer not found" });
     }
-    res.status(200).json({ id: timerDoc.id, ...timerDoc.data() });
+    res.status(200).json({ id: docSnap.id, ...docSnap.data() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// UPDATE (PUT /timers/:id)
-router.put("/:id", async (req, res) => {
+// UPDATE (PUT /timers/:timerID?userID=xxx)
+router.put("/:timerID", async (req, res) => {
   try {
+    const { userID } = req.query;
+    const { timerID } = req.params;
     const { startTime, endTime, duration, taskName, category } = req.body;
-    const timerRef = db.collection("timers").doc(req.params.id);
-    const timerDoc = await timerRef.get();
-    if (!timerDoc.exists) {
+
+    if (!userID || !timerID) {
+      return res.status(400).json({ error: "Missing userID or timerID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("timers")
+      .doc(timerID);
+
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
       return res.status(404).json({ error: "Timer not found" });
     }
 
-    await timerRef.update({
+    await docRef.update({
       ...(startTime && { startTime }),
       ...(endTime && { endTime }),
       ...(duration && { duration }),
       ...(taskName && { taskName }),
       ...(category && { category })
     });
-
-    res.status(200).json({ message: "Timer updated successfully!" });
+    res.status(200).json({ message: "Timer updated!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE (DELETE /timers/:id)
-router.delete("/:id", async (req, res) => {
+// DELETE (DELETE /timers/:timerID?userID=xxx)
+router.delete("/:timerID", async (req, res) => {
   try {
-    const timerRef = db.collection("timers").doc(req.params.id);
-    const timerDoc = await timerRef.get();
-    if (!timerDoc.exists) {
+    const { userID } = req.query;
+    const { timerID } = req.params;
+
+    if (!userID || !timerID) {
+      return res.status(400).json({ error: "Missing userID or timerID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("timers")
+      .doc(timerID);
+
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
       return res.status(404).json({ error: "Timer not found" });
     }
 
-    await timerRef.delete();
-    res.status(200).json({ message: "Timer deleted successfully!" });
+    await docRef.delete();
+    res.status(200).json({ message: "Timer deleted!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

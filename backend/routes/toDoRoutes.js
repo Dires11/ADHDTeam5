@@ -10,25 +10,36 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    const newTodo = await db.collection("todo").add({
-      userID,
-      taskName,
-      priority: priority || "Medium",
-      dueDate: dueDate || null,
-      status: status || "Pending",
-      createdAt: new Date()
-    });
+    const docRef = await db.collection("users")
+      .doc(userID)
+      .collection("todo")
+      .add({
+        taskName,
+        priority: priority || "Medium",
+        dueDate: dueDate || null,
+        status: status || "Pending",
+        createdAt: new Date()
+      });
 
-    res.status(201).json({ id: newTodo.id, message: "To-do item created!" });
+    res.status(201).json({ id: docRef.id, message: "To-do item created under user!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// READ ALL (GET /todo)
+// READ ALL (GET /todo?userID=xxx)
 router.get("/", async (req, res) => {
   try {
-    const snapshot = await db.collection("todo").get();
+    const { userID } = req.query;
+    if (!userID) {
+      return res.status(400).json({ error: "Missing userID" });
+    }
+
+    const snapshot = await db.collection("users")
+      .doc(userID)
+      .collection("todo")
+      .get();
+
     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(items);
   } catch (error) {
@@ -36,10 +47,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-// READ ONE (GET /todo/:id)
-router.get("/:id", async (req, res) => {
+// READ ONE (GET /todo/:todoID?userID=xxx)
+router.get("/:todoID", async (req, res) => {
   try {
-    const docRef = db.collection("todo").doc(req.params.id);
+    const { userID } = req.query;
+    const { todoID } = req.params;
+    if (!userID || !todoID) {
+      return res.status(400).json({ error: "Missing userID or todoID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("todo")
+      .doc(todoID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "To-do item not found" });
@@ -50,11 +71,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// UPDATE (PUT /todo/:id)
-router.put("/:id", async (req, res) => {
+// UPDATE (PUT /todo/:todoID?userID=xxx)
+router.put("/:todoID", async (req, res) => {
   try {
+    const { userID } = req.query;
+    const { todoID } = req.params;
     const { taskName, priority, dueDate, status } = req.body;
-    const docRef = db.collection("todo").doc(req.params.id);
+
+    if (!userID || !todoID) {
+      return res.status(400).json({ error: "Missing userID or todoID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("todo")
+      .doc(todoID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "To-do item not found" });
@@ -72,10 +104,21 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE (DELETE /todo/:id)
-router.delete("/:id", async (req, res) => {
+// DELETE (DELETE /todo/:todoID?userID=xxx)
+router.delete("/:todoID", async (req, res) => {
   try {
-    const docRef = db.collection("todo").doc(req.params.id);
+    const { userID } = req.query;
+    const { todoID } = req.params;
+
+    if (!userID || !todoID) {
+      return res.status(400).json({ error: "Missing userID or todoID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("todo")
+      .doc(todoID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "To-do item not found" });

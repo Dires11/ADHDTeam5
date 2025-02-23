@@ -9,32 +9,30 @@ app.use(express.json());
 app.use(cors());
 
 // 3) Import Your Route Files
-const guildRoutes = require("./routes/guildRoutes");
 const userRoutes = require("./routes/userRoutes");
-const plannerRoutes = require("./routes/plannerRoutes");
-const timerRoutes = require("./routes/timerRoutes");
-const competitionRoutes = require("./routes/competitionRoutes");
-const talkRoutes = require("./routes/talkRoutes");
-const notificationsRoutes = require("./routes/notificationsRoutes");
-const streaksRoutes = require("./routes/streaksRoutes");
-const toDoRoutes = require("./routes/toDoRoutes");
 const achievementsRoutes = require("./routes/achievementsRoutes");
+const competitionRoutes = require("./routes/competitionRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
+const notificationsRoutes = require("./routes/notificationsRoutes");
+const plannerRoutes = require("./routes/plannerRoutes");
 const rewardsRoutes = require("./routes/rewardsRoutes");
+const streaksRoutes = require("./routes/streaksRoutes");
+const talkRoutes = require("./routes/talkRoutes");
+const timerRoutes = require("./routes/timerRoutes");
+const toDoRoutes = require("./routes/toDoRoutes");
 
 // 4) Use Routes
-app.use("/guilds",guildRoutes)
 app.use("/users", userRoutes);
-app.use("/planner", plannerRoutes);
-app.use("/timers", timerRoutes);
-app.use("/competitions", competitionRoutes);
-app.use("/talk", talkRoutes);
-app.use("/notifications", notificationsRoutes);
-app.use("/streaks", streaksRoutes);
-app.use("/todo", toDoRoutes);
 app.use("/achievements", achievementsRoutes);
+app.use("/competitions", competitionRoutes);
 app.use("/leaderboard", leaderboardRoutes);
+app.use("/notifications", notificationsRoutes);
+app.use("/planner", plannerRoutes);
 app.use("/rewards", rewardsRoutes);
+app.use("/streaks", streaksRoutes);
+app.use("/talk", talkRoutes);
+app.use("/timers", timerRoutes);
+app.use("/todo", toDoRoutes);
 
 // 5) Simple Test Route
 app.get("/", (req, res) => {

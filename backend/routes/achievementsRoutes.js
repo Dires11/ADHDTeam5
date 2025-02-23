@@ -5,30 +5,39 @@ const db = require("../firebaseConfig");
 // CREATE (POST /achievements)
 router.post("/", async (req, res) => {
   try {
-    // userID should match the Auth UID from the front-end
     const { userID, achievementName, description } = req.body;
     if (!userID || !achievementName) {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    // Store the achievement with userID referencing the same UID as in Auth
-    const newAchievement = await db.collection("achievements").add({
-      userID,                       // e.g. "WogXHfWZqIMvgWvTBI37DiJKV6G3"
-      achievementName,
-      description: description || "",
-      unlockedAt: new Date()
-    });
+    const docRef = await db.collection("users")
+      .doc(userID)
+      .collection("achievements")
+      .add({
+        achievementName,
+        description: description || "",
+        unlockedAt: new Date()
+      });
 
-    res.status(201).json({ id: newAchievement.id, message: "Achievement unlocked!" });
+    res.status(201).json({ id: docRef.id, message: "Achievement unlocked!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// READ ALL (GET /achievements)
+// READ ALL (GET /achievements?userID=xxx)
 router.get("/", async (req, res) => {
   try {
-    const snapshot = await db.collection("achievements").get();
+    const { userID } = req.query;
+    if (!userID) {
+      return res.status(400).json({ error: "Missing userID" });
+    }
+
+    const snapshot = await db.collection("users")
+      .doc(userID)
+      .collection("achievements")
+      .get();
+
     const achievements = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(achievements);
   } catch (error) {
@@ -36,31 +45,52 @@ router.get("/", async (req, res) => {
   }
 });
 
-// READ ONE (GET /achievements/:id)
-router.get("/:id", async (req, res) => {
+// READ ONE (GET /achievements/:achievementID?userID=xxx)
+router.get("/:achievementID", async (req, res) => {
   try {
-    const docRef = db.collection("achievements").doc(req.params.id);
+    const { userID } = req.query;
+    const { achievementID } = req.params;
+    if (!userID || !achievementID) {
+      return res.status(400).json({ error: "Missing userID or achievementID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("achievements")
+      .doc(achievementID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Achievement not found" });
     }
+
     res.status(200).json({ id: docSnap.id, ...docSnap.data() });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// UPDATE (PUT /achievements/:id)
-router.put("/:id", async (req, res) => {
+// UPDATE (PUT /achievements/:achievementID?userID=xxx)
+router.put("/:achievementID", async (req, res) => {
   try {
+    const { userID } = req.query;
+    const { achievementID } = req.params;
     const { achievementName, description } = req.body;
-    const docRef = db.collection("achievements").doc(req.params.id);
+
+    if (!userID || !achievementID) {
+      return res.status(400).json({ error: "Missing userID or achievementID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("achievements")
+      .doc(achievementID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Achievement not found" });
     }
 
-    // Update only the fields provided
     await docRef.update({
       ...(achievementName && { achievementName }),
       ...(description && { description })
@@ -71,10 +101,21 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE (DELETE /achievements/:id)
-router.delete("/:id", async (req, res) => {
+// DELETE (DELETE /achievements/:achievementID?userID=xxx)
+router.delete("/:achievementID", async (req, res) => {
   try {
-    const docRef = db.collection("achievements").doc(req.params.id);
+    const { userID } = req.query;
+    const { achievementID } = req.params;
+
+    if (!userID || !achievementID) {
+      return res.status(400).json({ error: "Missing userID or achievementID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("achievements")
+      .doc(achievementID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Achievement not found" });

@@ -10,23 +10,34 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    const newTalk = await db.collection("talks").add({
-      userID,
-      contactUserID,
-      taskCompletion: taskCompletion || "",
-      createdAt: new Date()
-    });
+    const docRef = await db.collection("users")
+      .doc(userID)
+      .collection("talk")
+      .add({
+        contactUserID,
+        taskCompletion: taskCompletion || "",
+        createdAt: new Date()
+      });
 
-    res.status(201).json({ id: newTalk.id, message: "Talk entry created!" });
+    res.status(201).json({ id: docRef.id, message: "Talk entry created under user!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// READ ALL (GET /talk)
+// READ ALL (GET /talk?userID=xxx)
 router.get("/", async (req, res) => {
   try {
-    const snapshot = await db.collection("talks").get();
+    const { userID } = req.query;
+    if (!userID) {
+      return res.status(400).json({ error: "Missing userID" });
+    }
+
+    const snapshot = await db.collection("users")
+      .doc(userID)
+      .collection("talk")
+      .get();
+
     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(data);
   } catch (error) {
@@ -34,10 +45,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-// READ ONE (GET /talk/:id)
-router.get("/:id", async (req, res) => {
+// READ ONE (GET /talk/:talkID?userID=xxx)
+router.get("/:talkID", async (req, res) => {
   try {
-    const docRef = db.collection("talks").doc(req.params.id);
+    const { userID } = req.query;
+    const { talkID } = req.params;
+    if (!userID || !talkID) {
+      return res.status(400).json({ error: "Missing userID or talkID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("talk")
+      .doc(talkID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Talk entry not found" });
@@ -48,11 +69,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// UPDATE (PUT /talk/:id)
-router.put("/:id", async (req, res) => {
+// UPDATE (PUT /talk/:talkID?userID=xxx)
+router.put("/:talkID", async (req, res) => {
   try {
+    const { userID } = req.query;
+    const { talkID } = req.params;
     const { contactUserID, taskCompletion } = req.body;
-    const docRef = db.collection("talks").doc(req.params.id);
+
+    if (!userID || !talkID) {
+      return res.status(400).json({ error: "Missing userID or talkID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("talk")
+      .doc(talkID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Talk entry not found" });
@@ -68,10 +100,21 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE (DELETE /talk/:id)
-router.delete("/:id", async (req, res) => {
+// DELETE (DELETE /talk/:talkID?userID=xxx)
+router.delete("/:talkID", async (req, res) => {
   try {
-    const docRef = db.collection("talks").doc(req.params.id);
+    const { userID } = req.query;
+    const { talkID } = req.params;
+
+    if (!userID || !talkID) {
+      return res.status(400).json({ error: "Missing userID or talkID" });
+    }
+
+    const docRef = db.collection("users")
+      .doc(userID)
+      .collection("talk")
+      .doc(talkID);
+
     const docSnap = await docRef.get();
     if (!docSnap.exists) {
       return res.status(404).json({ error: "Talk entry not found" });
