@@ -61,7 +61,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// UPDATE (PUT) a Guild (for updating name and/or description)
+// UPDATE (PUT) a Guild
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -90,19 +90,36 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// ADD a member to a Guild
+// ADD a member to a Guild with duplicate check
 router.post("/:id/members", async (req, res) => {
   try {
-    const { id } = req.params;  // guild ID from URL
-    const { userId } = req.body;  // user ID to add as a member
+    const { id } = req.params;
+    const { userId } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    const guildRef = db.collection("guilds").doc(id);
+    const userRef = db.collection("users").doc(userId);
+    const userSnap = await userRef.get();
 
-    // Add userId to the members array using Firestore's arrayUnion
+    if (!userSnap.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const guildRef = db.collection("guilds").doc(id);
+    const guildSnap = await guildRef.get();
+
+    if (!guildSnap.exists) {
+      return res.status(404).json({ error: "Guild not found" });
+    }
+
+    const guildData = guildSnap.data();
+
+    if (guildData.members && guildData.members.includes(userId)) {
+      return res.status(400).json({ message: "User is already a member of this guild." });
+    }
+
     await guildRef.update({
       members: admin.firestore.FieldValue.arrayUnion(userId),
       updatedAt: new Date()
@@ -114,32 +131,5 @@ router.post("/:id/members", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
-
-// REMOVE a member from a Guild
-router.delete("/:id/members", async (req, res) => {
-  try {
-    const { id } = req.params;  // guild ID from URL
-    const { userId } = req.body;  // user ID to remove
-
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
-    }
-
-    const guildRef = db.collection("guilds").doc(id);
-
-    // Remove userId from the members array using arrayRemove
-    await guildRef.update({
-      members: admin.firestore.FieldValue.arrayRemove(userId),
-      updatedAt: new Date()
-    });
-
-    return res.status(200).json({ message: "Member removed successfully" });
-  } catch (error) {
-    console.error("Error removing member:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-
 
 module.exports = router;
