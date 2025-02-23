@@ -3,6 +3,14 @@ const express = require("express");
 const router = express.Router();
 const db = require("../firebaseConfig");
 
+async function create_blank_user(req,res,userID){
+//   const inPersonReward = require("./rewardsRoutes")
+//   let rewardName = ""
+//   let pointsRequired = ""
+//   let dateEarned = ""
+//   let description = ""
+//   inPersonReward.createBlankDigitalReward(rewardName, pointsRequired, dateEarned, description, userID)
+// }
 // CREATE (POST /users)
 router.post("/", async (req, res) => {
   try {
@@ -11,27 +19,31 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields!" });
     }
 
-    const newUser = await db.collection("users").add({
-      username,
+    
+    // 1) Create the user in Firebase Auth (Admin SDK)
+    const userRecord = await admin.auth().createUser({
       email,
       password,
-      displayName: username
+      displayName: username // optional, sets displayName in Auth
     });
-
     const uid = userRecord.uid;
+    
 
+    
     // 2) Create a Firestore doc with doc ID = uid
     await db.collection("users").doc(uid).set({
       username,
       email,
       // Storing plain password is not recommended
       password,
-      userID,
+      userID: uid,
+      displayName: username,
       points, //initialize points
       createdAt: new Date()
     });
 
     res.status(201).json({ id: uid, message: "User created in Auth + Firestore!" });
+    // await create_blank_user(req,res,userID);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -32,6 +32,10 @@ router.post("/digital", async (req, res) => {
   }
 });
 
+async function createBlankDigitalReward(rewardName, pointsRequired, dateEarned, description){
+  
+}
+
 // READ ALL (GET /rewards/digital?userID=xxx)
 router.get("/digital", async (req, res) => {
   try {
