@@ -154,7 +154,7 @@ router.post("/:betID/complete", async (req, res) => {
           return res.status(400).json({ error: "Invalid input! Completion status must be true or false." });
       }
 
-      console.log("Received request to complete bet:", betID, "with status:", completed);
+      //console.log("Received request to complete bet:", betID, "with status:", completed);
 
       const betRef = db.collection("bets").doc(betID);
       const betSnap = await betRef.get();
@@ -217,7 +217,7 @@ router.post("/:betID/complete", async (req, res) => {
               return;
           }
 
-          console.log(`Updating points for user ${userID}: ${pointsChange} points`);
+          //console.log(`Updating points for user ${userID}: ${pointsChange} points`);
           await userRef.update({
               points: admin.firestore.FieldValue.increment(pointsChange)
           });
@@ -236,7 +236,7 @@ router.post("/:betID/complete", async (req, res) => {
           return res.status(404).json({ error: "Bet creator not found" });
       }
 
-      console.log(`Updating points for bet creator ${betData.userID}: ${userPointsChange} points`);
+      //console.log(`Updating points for bet creator ${betData.userID}: ${userPointsChange} points`);
       await creatorRef.update({
           points: admin.firestore.FieldValue.increment(userPointsChange)
       });
