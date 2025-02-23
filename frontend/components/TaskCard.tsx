@@ -23,21 +23,26 @@ export default function TaskCard({ title, description, dueDate }: Props) {
   const swipeGesture = Gesture.Pan()
     .onUpdate((event) => {
       if (event.translationX < 0) {
-        // ✅ Only swipe left
         translateX.value = event.translationX;
       } else {
         translateX.value = event.translationX;
       }
     })
     .onEnd(() => {
-      if (translateX.value < -100) {
-        backgroundColor.value = Colors.light.success;
-        translateX.value = withSpring(0); // ✅ Keep moved to left
-      } else {
-        backgroundColor.value = Colors.light.primary;
-        translateX.value = withSpring(0); // ✅ Snap back to original position
+      if (translateX.value > 100) {
+        //Swiped far right → Task Completed (Brighter Green)
+        backgroundColor.value = "#00E676"; // Brighter green color
+        translateX.value = withSpring(0); // Snap back after success
+      } else if (translateX.value < -100){
+        //Swiped left -> Task Failed
+        backgroundColor.value = "#FF3B30"; //Bright red color
+        translateX.value = withSpring(0); 
+      } 
+      else {
+        translateX.value = withSpring(0);
       }
     });
+    
 
   // Animated Styles
   const animatedCardStyle = useAnimatedStyle(() => ({
