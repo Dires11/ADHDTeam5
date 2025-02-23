@@ -146,115 +146,136 @@ router.post("/:betID/respond", async (req, res) => {
 
 // COMPLETE A BET (POST /bets/:betID/complete)
 router.post("/:betID/complete", async (req, res) => {
-    try {
+  try {
       const { betID } = req.params;
       const { completed } = req.body; // completed should be true or false
-  
+
       if (typeof completed !== "boolean") {
-        return res.status(400).json({ error: "Invalid input! Completion status must be true or false." });
+          return res.status(400).json({ error: "Invalid input! Completion status must be true or false." });
       }
-  
+
+      console.log("Received request to complete bet:", betID, "with status:", completed);
+
       const betRef = db.collection("bets").doc(betID);
       const betSnap = await betRef.get();
-  
+
       if (!betSnap.exists) {
-        return res.status(404).json({ error: "Bet not found" });
+          console.error("Bet not found with ID:", betID);
+          return res.status(404).json({ error: "Bet not found" });
       }
-  
+
       const betData = betSnap.data();
-  
+
       if (betData.completed) {
-        return res.status(400).json({ error: "Bet is already completed!" });
+          console.error("Bet is already completed:", betID);
+          return res.status(400).json({ error: "Bet is already completed!" });
       }
-  
+
       const guildRef = db.collection("guilds").doc(betData.guildID);
       const guildSnap = await guildRef.get();
-  
+
       if (!guildSnap.exists) {
-        return res.status(404).json({ error: "Guild not found" });
+          console.error("Guild not found with ID:", betData.guildID);
+          return res.status(404).json({ error: "Guild not found" });
       }
-  
+
       const guildMembers = guildSnap.data().members || [];
-  
+
       // Prepare points updates and personalized messages
       const pointsUpdates = {};
       const messages = [];
-  
+
       betData.bets.forEach(({ userID, belief }) => {
-        let message = "";
-        if (completed) {
-          if (belief === true) {
-            pointsUpdates[userID] = (pointsUpdates[userID] || 0) + 1;
-            message = "Bet placed correctly! You earned 1 point.";
+          let message = "";
+          if (completed) {
+              if (belief === true) {
+                  pointsUpdates[userID] = (pointsUpdates[userID] || 0) + 1;
+                  message = "Bet placed correctly! You earned 1 point.";
+              } else {
+                  pointsUpdates[userID] = (pointsUpdates[userID] || 0) - 1;
+                  message = "You bet wrong! -1 point.";
+              }
           } else {
-            pointsUpdates[userID] = (pointsUpdates[userID] || 0) - 1;
-            message = "You bet wrong! -1 point.";
+              if (belief === false) {
+                  pointsUpdates[userID] = (pointsUpdates[userID] || 0) + 1;
+                  message = "Bet placed correctly! You earned 1 point.";
+              } else {
+                  pointsUpdates[userID] = (pointsUpdates[userID] || 0) - 1;
+                  message = "You bet wrong! -1 point.";
+              }
           }
-        } else {
-          if (belief === false) {
-            pointsUpdates[userID] = (pointsUpdates[userID] || 0) + 1;
-            message = "Bet placed correctly! You earned 1 point.";
-          } else {
-            pointsUpdates[userID] = (pointsUpdates[userID] || 0) - 1;
-            message = "You bet wrong! -1 point.";
-          }
-        }
-        messages.push({ userID, message });
+          messages.push({ userID, message });
       });
-  
+
       // Update points for all relevant users
       await Promise.all(Object.entries(pointsUpdates).map(async ([userID, pointsChange]) => {
-        const userRef = db.collection("users").doc(userID);
-        await userRef.update({
-          points: admin.firestore.FieldValue.increment(pointsChange)
-        });
+          const userRef = db.collection("users").doc(userID);
+          const userSnap = await userRef.get();
+
+          if (!userSnap.exists) {
+              console.error("User not found with ID:", userID);
+              return;
+          }
+
+          console.log(`Updating points for user ${userID}: ${pointsChange} points`);
+          await userRef.update({
+              points: admin.firestore.FieldValue.increment(pointsChange)
+          });
       }));
-  
+
       // Calculate and update the user's points
       const userPointsChange = completed
-        ? betData.bets.filter(bet => bet.belief === false).length
-        : -betData.bets.filter(bet => bet.belief === false).length;
-  
-      await db.collection("users").doc(betData.userID).update({
-        points: admin.firestore.FieldValue.increment(userPointsChange)
+          ? betData.bets.filter(bet => bet.belief === false).length
+          : -betData.bets.filter(bet => bet.belief === false).length;
+
+      const creatorRef = db.collection("users").doc(betData.userID);
+      const creatorSnap = await creatorRef.get();
+
+      if (!creatorSnap.exists) {
+          console.error("Bet creator not found with ID:", betData.userID);
+          return res.status(404).json({ error: "Bet creator not found" });
+      }
+
+      console.log(`Updating points for bet creator ${betData.userID}: ${userPointsChange} points`);
+      await creatorRef.update({
+          points: admin.firestore.FieldValue.increment(userPointsChange)
       });
-  
+
       await betRef.update({
-        completed: true,
-        completedSuccessfully: completed,
-        completedAt: new Date()
+          completed: true,
+          completedSuccessfully: completed,
+          completedAt: new Date()
       });
-  
+
       // Send personalized messages to guild members
       await Promise.all(messages.map(async ({ userID, message }) => {
-        try {
-          await axios.post("http://localhost:5000/talk", {
-            userID: "system",
-            contactUserID: userID,
-            taskCompletion: message
-          });
-        } catch (error) {
-          console.error(`Failed to send message to ${userID}:`, error.message);
-        }
+          try {
+              await axios.post("http://localhost:5000/talk", {
+                  userID: "system",
+                  contactUserID: userID,
+                  taskCompletion: message
+              });
+          } catch (error) {
+              console.error(`Failed to send message to ${userID}:`, error.message);
+          }
       }));
-  
+
       // Send a message to the bet creator
       const userMessage = completed
-        ? `You earned ${Math.abs(userPointsChange)} points for completing the task!`
-        : `You lost ${Math.abs(userPointsChange)} points for not completing the task.`;
-  
+          ? `You earned ${Math.abs(userPointsChange)} points for completing the task!`
+          : `You lost ${Math.abs(userPointsChange)} points for not completing the task.`;
+
       await axios.post("http://localhost:5000/talk", {
-        userID: "system",
-        contactUserID: betData.userID,
-        taskCompletion: userMessage
+          userID: "system",
+          contactUserID: betData.userID,
+          taskCompletion: userMessage
       });
-  
+
       res.status(200).json({ message: "Bet completed and points updated successfully!" });
-    } catch (error) {
+  } catch (error) {
       console.error("Error completing bet:", error);
       res.status(500).json({ error: "Internal server error" });
-    }
-  });
-  
+  }
+});
 
 module.exports = router;
