@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../firebaseConfig");
 
-async function create_blank_user(req,res,userID){
+// async function create_blank_user(req,res,userID){
 //   const inPersonReward = require("./rewardsRoutes")
 //   let rewardName = ""
 //   let pointsRequired = ""
